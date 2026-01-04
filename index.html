@@ -2,9 +2,8 @@
 <html lang="it">
 <head>
 <meta charset="UTF-8">
-<title>Pagliacciometro Gioco AR</title>
+<title>Pagliacciometro Gioco</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
 <style>
 body {margin:0; background:#111; font-family:Arial,sans-serif; display:flex; justify-content:center; align-items:center; height:100vh; color:white;}
 .app {width:360px; background:#222; border-radius:24px; padding:16px; box-shadow:0 0 40px rgba(255,0,0,.5); text-align:center; position:relative;}
@@ -16,14 +15,11 @@ button {width:100%; padding:12px; border-radius:20px; border:none; background:#f
 #status {margin-top:12px; min-height:40px; font-weight:bold;}
 .meter {height:16px; background:#333; border-radius:10px; overflow:hidden; margin:12px 0;}
 .fill {height:100%; width:0%; background:green; transition:all .4s;}
-#video {display:none;}
 </style>
 </head>
-
 <body>
 <div class="app">
-  <h3>🧭 Pagliacciometro AR</h3>
-  <video id="video" autoplay playsinline></video>
+  <h3>🧭 Pagliacciometro</h3>
   <div id="radar">
     <div id="line"></div>
   </div>
@@ -36,16 +32,11 @@ button {width:100%; padding:12px; border-radius:20px; border:none; background:#f
 <audio id="bip2" src="https://www.soundjay.com/button/sounds/button-10.mp3"></audio>
 <audio id="alarm" src="https://www.soundjay.com/misc/sounds/alarm-clock-1.mp3"></audio>
 
-<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.2.0"></script>
-<script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd@2.2.2"></script>
-
 <script>
 const radar = document.getElementById("radar");
 const line = document.getElementById("line");
 const status = document.getElementById("status");
 const fill = document.getElementById("fill");
-const video = document.getElementById("video");
-
 const bip1 = document.getElementById("bip1");
 const bip2 = document.getElementById("bip2");
 const alarm = document.getElementById("alarm");
@@ -58,74 +49,46 @@ const phrases = [
   "Segnale rosso: circo in arrivo!"
 ];
 
-let model;
+// Bussola simulata (ruota piano piano)
+let angle = 0;
+setInterval(()=>{angle+=2; line.style.transform=`rotate(${angle}deg)`;}, 100);
 
-// Bussola
-if(window.DeviceOrientationEvent){
-  window.addEventListener("deviceorientation", e=>{
-    if(e.alpha!==null) line.style.transform=`rotate(${e.alpha}deg)`;
-  });
-}
-
-// Puntini rossi casuali
+// Crea puntini rossi
 function createClowns(count){
   document.querySelectorAll(".clown").forEach(c=>c.remove());
   for(let i=0;i<count;i++){
-    let angle = Math.random()*360;
-    let rad = angle*Math.PI/180;
-    let dist = 90 + Math.random()*40;
-    let x = 130 + Math.cos(rad)*dist;
-    let y = 130 + Math.sin(rad)*dist;
+    let a = Math.random()*360;
+    let rad = a*Math.PI/180;
+    let d = 90+Math.random()*50;
+    let x = 130 + Math.cos(rad)*d;
+    let y = 130 + Math.sin(rad)*d;
     let c = document.createElement("div");
     c.className="clown";
-    c.style.left = x+"px";
-    c.style.top = y+"px";
+    c.style.left=x+"px";
+    c.style.top=y+"px";
     radar.appendChild(c);
   }
 }
 
-// Inizializza camera e modello
-async function initCamera(){
-  try{
-    const stream = await navigator.mediaDevices.getUserMedia({video:true});
-    video.srcObject = stream;
-    model = await cocoSsd.load();
-    detectFrame();
-  } catch(err){
-    console.log("Fotocamera non disponibile:", err);
-  }
-}
-
-// Rilevamento persone
-async function detectFrame(){
-  if(!model) return;
-  const predictions = await model.detect(video);
-  let people = predictions.filter(p=>p.class==="person").length;
-
-  // Contachilometri dinamico
-  let level = Math.min(100, people*25 + Math.floor(Math.random()*30));
+// Funzione principale
+function scan(){
+  // Livello di pagliacceria casuale
+  let level = Math.floor(Math.random()*101);
   fill.style.width = level+"%";
   fill.style.background = level<40?"green":level<70?"orange":"red";
 
-  // Bip e frasi
+  // Bip in base al livello
   if(level<40) bip1.play();
   else if(level<70) bip2.play();
   else alarm.play();
 
-  // Puntini sempre almeno 3 + uno per ogni persona
-  createClowns(3 + people);
+  // Numero di puntini proporzionale al livello
+  let count = 3 + Math.floor(level/10);
+  createClowns(count);
 
   // Frase casuale
-  status.innerText = people>0?phrases[Math.floor(Math.random()*phrases.length)]:"Radar pulito.";
-
-  setTimeout(detectFrame, 1000);
+  status.innerText = phrases[Math.floor(Math.random()*phrases.length)];
 }
-
-// Pulsante manuale
-function scan(){detectFrame();}
-
-// Avvio fotocamera
-initCamera();
 </script>
 </body>
 </html>
