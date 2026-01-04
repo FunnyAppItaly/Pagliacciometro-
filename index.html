@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<title>Pagliacciometro Radar</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<style>
+body {
+  margin:0;
+  background:#0b0b0b;
+  font-family:Arial,sans-serif;
+  color:white;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  height:100vh;
+}
+
+.app {
+  width:360px;
+  background:#151515;
+  border-radius:24px;
+  padding:16px;
+  box-shadow:0 0 40px rgba(255,0,0,.35);
+  text-align:center;
+}
+
+#radar {
+  width:260px;
+  height:260px;
+  margin:14px auto;
+  border-radius:50%;
+  background:
+    radial-gradient(circle,#222 40%,#111 75%),
+    repeating-radial-gradient(circle,rgba(255,0,0,.15) 0 2px,transparent 2px 22px);
+  position:relative;
+  overflow:hidden;
+}
+
+#line {
+  position:absolute;
+  width:50%;
+  height:3px;
+  background:red;
+  top:50%;
+  left:50%;
+  transform-origin:left center;
+  box-shadow:0 0 12px red;
+}
+
+.clown {
+  width:12px;
+  height:12px;
+  background:red;
+  border-radius:50%;
+  position:absolute;
+  box-shadow:0 0 10px red;
+}
+
+button {
+  width:100%;
+  padding:10px;
+  border-radius:20px;
+  border:none;
+  background:#ff2d2d;
+  color:white;
+  font-size:14px;
+  margin-top:8px;
+}
+
+#status {
+  margin-top:10px;
+  min-height:40px;
+  font-weight:bold;
+}
+</style>
+</head>
+
+<body>
+<div class="app">
+  <h3>🧭 Pagliacciometro</h3>
+
+  <div id="radar">
+    <div id="line"></div>
+  </div>
+
+  <button onclick="scan()">SCANSIONA AREA</button>
+  <div id="status"></div>
+</div>
+
+<audio id="bip" src="https://www.soundjay.com/button/sounds/button-3.mp3"></audio>
+
+<script>
+const line = document.getElementById("line");
+const radar = document.getElementById("radar");
+const status = document.getElementById("status");
+const bip = document.getElementById("bip");
+
+let clownAngle = Math.random() * 360;
+
+// BUSSOLA
+if (window.DeviceOrientationEvent) {
+  window.addEventListener("deviceorientation", e => {
+    if (e.alpha !== null) {
+      line.style.transform = `rotate(${e.alpha}deg)`;
+    }
+  });
+}
+
+function scan() {
+  document.querySelectorAll(".clown").forEach(c=>c.remove());
+
+  let danger = Math.floor(Math.random()*100);
+  let angle = Math.random()*360;
+  clownAngle = angle;
+
+  let rad = angle * Math.PI/180;
+  let dist = 90;
+  let x = 130 + Math.cos(rad)*dist;
+  let y = 130 + Math.sin(rad)*dist;
+
+  let c = document.createElement("div");
+  c.className="clown";
+  c.style.left=x+"px";
+  c.style.top=y+"px";
+  radar.appendChild(c);
+
+  bip.play();
+
+  if(danger<40)
+    status.innerText="🟢 Segnale debole. Tieni la direzione.";
+  else if(danger<70)
+    status.innerText="🟠 Segnale forte. Avvicinamento in corso.";
+  else
+    status.innerText="🔴 Clown molto vicino. Cambia rotta.";
+}
+</script>
+</body>
+</html>
